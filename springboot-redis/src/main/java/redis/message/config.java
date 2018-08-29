@@ -1,24 +1,22 @@
-package hello;
+package redis.message;
 
-import java.util.concurrent.CountDownLatch;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.data.redis.listener.adapter.MessageListenerAdapter;
 
-@SpringBootApplication
-public class Application {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
-
+@Configuration
+public class config {
+	/**
+	 * 配置配置消息监听器的容器
+	 * 
+	 * @param connectionFactory
+	 * @param listenerAdapter
+	 * @return
+	 */
 	@Bean
 	RedisMessageListenerContainer container(RedisConnectionFactory connectionFactory,
 			MessageListenerAdapter listenerAdapter) {
@@ -30,39 +28,41 @@ public class Application {
 		return container;
 	}
 
+	/**
+	 * 配置消息监听器
+	 * 
+	 * @param receiver 处理消息方法
+	 * @return
+	 */
 	@Bean
 	MessageListenerAdapter listenerAdapter(Receiver receiver) {
 		return new MessageListenerAdapter(receiver, "receiveMessage");
 	}
 
-	// @Cacheable
+	/**
+	 * 消息处理类
+	 * 
+	 * @return
+	 */
 	@Bean
-	Receiver receiver(CountDownLatch latch) {
-		return new Receiver(latch);
+	Receiver receiver() {
+		return new Receiver();
 	}
 
-	@Bean
-	CountDownLatch latch() {
-		return new CountDownLatch(1);
-	}
-
+	/**
+	 * 配置Redis客户端
+	 * 
+	 * @param connectionFactory
+	 * @return
+	 */
 	@Bean
 	StringRedisTemplate template(RedisConnectionFactory connectionFactory) {
 		return new StringRedisTemplate(connectionFactory);
 	}
 
-	public static void main(String[] args) throws InterruptedException {
+//	@Bean
+//	CountDownLatch latch() {
+//		return new CountDownLatch(1);
+//	}
 
-		ApplicationContext ctx = SpringApplication.run(Application.class, args);
-
-		StringRedisTemplate template = ctx.getBean(StringRedisTemplate.class);
-		CountDownLatch latch = ctx.getBean(CountDownLatch.class);
-
-		LOGGER.info("Sending message...");
-		template.convertAndSend("chat", "Hello from Redis!");
-
-		latch.await();
-
-		System.exit(0);
-	}
 }
